@@ -285,27 +285,31 @@ def add_2_codebook(codebook, value):
     return array
 
 @jit(nopython=True)
-def shuffle_array(arr):
-    num_indices = min(3, len(arr))
-    indices_to_shuffle = np.random.choice(len(arr), size=num_indices, replace=False)
-    shuffled_arr = arr.copy()
-    
-    subset = np.zeros(num_indices)
-    for i in range(num_indices):
-        subset[i] = shuffled_arr[indices_to_shuffle[i]]
-    
-    for i in range(num_indices - 1):
-        j = np.random.randint(i, num_indices)
+def shuffle_array(input_arr):
+    arr = input_arr.copy()
+    n = len(arr)
+    l = min(3, n)
 
-        temp = subset[i]
-        subset[i] = subset[j]
-        subset[j] = temp
+    idx = np.empty(l, dtype=np.int64)
+    chosen = set()
+    for i in range(l):
+        r = np.random.randint(0, n)
+        while r in chosen:
+            r = np.random.randint(0, n)
+        idx[i] = r
+        chosen.add(r)
     
-    for i in range(num_indices):
-        shuffled_arr[indices_to_shuffle[i]] = subset[i]
+    perm = np.arange(l)
+    for i in range(l):
+        j = np.random.randint(i, l)
+        perm[i], perm[j] = perm[j], perm[i]
     
-    return shuffled_arr
-
+    # Swap only the chosen indices
+    temp = arr[idx].copy()
+    for i in range(l):
+        arr[idx[i]] = temp[perm[i]]
+    return arr
+    
 @jit(nopython= True)
 def calculate_channel_noise(codebook, transition_matrix):
     dimension = transition_matrix.shape[1]
